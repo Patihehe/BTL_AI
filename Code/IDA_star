@@ -1,0 +1,178 @@
+import random
+from typing import List, Tuple, Optional
+from copy import deepcopy
+
+def create_goal_state(N: int) -> List[List[int]]:
+    """Tạo trạng thái mục tiêu cho bảng NxN."""
+    goal = [[0] * N for _ in range(N)]
+    for i in range(N):
+        for j in range(N):
+            if i == N-1 and j == N-1:
+                goal[i][j] = 0  # Ô trống ở vị trí cuối
+            else:
+                goal[i][j] = i * N + j + 1  # Số từ 1 đến N^2-1
+    return goal
+
+class PuzzleState:
+    def __init__(self, board: List[List[int]], g: int = 0, parent: Optional['PuzzleState'] = None, move: str = None, N: int = 3):
+        self.board = board
+        self.g = g  # Chi phí từ trạng thái ban đầu đến trạng thái hiện tại
+        self.parent = parent  # Trạng thái cha để truy vết đường đi
+        self.move = move  # Lưu động tác di chuyển
+        self.N = N  # Kích thước bảng NxN
+
+    def __eq__(self, other):
+        return self.board == other.board
+
+    def manhattan_distance(self) -> int:
+        """Tính heuristic Manhattan cho bảng NxN."""
+        distance = 0
+        for i in range(self.N):
+            for j in range(self.N):
+                value = self.board[i][j]
+                if value != 0:  # Bỏ qua ô trống
+                    target_row = (value - 1) // self.N
+                    target_col = (value - 1) % self.N
+                    distance += abs(i - target_row) + abs(j - target_col)
+        return distance
+
+    def f(self) -> int:
+        """Hàm f(n) = g(n) + h(n)."""
+        return self.g + self.manhattan_distance()
+
+    def get_blank_pos(self) -> Tuple[int, int]:
+        """Tìm vị trí ô trống (0)."""
+        for i in range(self.N):
+            for j in range(self.N):
+                if self.board[i][j] == 0:
+                    return i, j
+        return -1, -1
+
+    def get_neighbors(self) -> List['PuzzleState']:
+        """Tạo các trạng thái con bằng cách di chuyển ô trống."""
+        neighbors = []
+        row, col = self.get_blank_pos()
+        directions = [
+            (-1, 0, "Up"),    # Di chuyển ô trống lên
+            (1, 0, "Down"),   # Di chuyển ô trống xuống
+            (0, -1, "Left"),  # Di chuyển ô trống trái
+            (0, 1, "Right")   # Di chuyển ô trống phải
+        ]
+
+        for dr, dc, move_name in directions:
+            new_row, new_col = row + dr, col + dc
+            if 0 <= new_row < self.N and 0 <= new_col < self.N:
+                new_board = deepcopy(self.board)
+                new_board[row][col], new_board[new_row][new_col] = new_board[new_row][new_col], new_board[row][col]
+                neighbors.append(PuzzleState(new_board, self.g + 1, self, move_name, self.N))
+        return neighbors
+
+def is_solvable(board: List[List[int]], N: int) -> bool:
+    """Kiểm tra xem trạng thái NxN có giải được không dựa trên số đảo ngược và vị trí ô trống."""
+    # Chuyển board thành danh sách 1D, bỏ ô trống
+    flat = [num for row in board for num in row if num != 0]
+    inversions = 0
+    for i in range(len(flat)):
+        for j in range(i + 1, len(flat)):
+            if flat[i] > flat[j]:
+                inversions += 1
+
+    # Tìm vị trí ô trống
+    blank_row = -1
+    for i in range(N):
+        for j in range(N):
+            if board[i][j] == 0:
+                blank_row = i
+                break
+        if blank_row != -1:
+            break
+
+    # Với N lẻ: Chỉ cần số đảo ngược chẵn
+    if N % 2 == 1:
+        return inversions % 2 == 0
+    # Với N chẵn: Tổng số đảo ngược và khoảng cách hàng của ô trống phải chẵn
+    else:
+        taxicab_distance = abs(blank_row - (N - 1))
+        return (inversions + taxicab_distance) % 2 == 0
+
+def ida_star(start_board: List[List[int]], N: int) -> Tuple[Optional[PuzzleState], int]:
+    """
+    Thuật toán IDA* để giải n-puzzle.
+    Trả về: (Trạng thái mục tiêu, số bước di chuyển).
+    """
+    # Kiểm tra trạng thái có giải được không
+    if not is_solvable(start_board, N):
+        return None, -1
+
+    start_state = PuzzleState(start_board, N=N)
+    threshold = start_state.f()  # Ngưỡng ban đầu
+    while True:
+        result, new_threshold = search(start_state, threshold)
+        if result is not None:  # Tìm thấy mục tiêu
+            return result, result.g
+        if new_threshold == float('inf'):  # Không có giải pháp
+            return None, -1
+        threshold = new_threshold  # Cập nhật ngưỡng
+
+def search(state: PuzzleState, threshold: int) -> Tuple[Optional[PuzzleState], int]:
+    """
+    Tìm kiếm theo chiều sâu với ngưỡng.
+    Trả về: (Trạng thái mục tiêu hoặc None, ngưỡng mới).
+    """
+    f_value = state.f()
+    if f_value > threshold:
+        return None, f_value
+    if state.board == create_goal_state(state.N):
+        return state, threshold
+
+    min_threshold = float('inf')
+    for neighbor in state.get_neighbors():
+        result, new_threshold = search(neighbor, threshold)
+        if result is not None:
+            return result, threshold
+        min_threshold = min(min_threshold, new_threshold)
+
+    return None, min_threshold
+
+def print_solution(state: Optional[PuzzleState]):
+    """In đường đi và các bước di chuyển từ trạng thái ban đầu đến mục tiêu."""
+    if state is None:
+        print("No solution exists for this puzzle.")
+        return
+    path = []
+    moves = []
+    while state:
+        path.append(state.board)
+        if state.move:
+            moves.append(state.move)
+        state = state.parent
+    print(f"Solution found in {len(moves)} moves:")
+    for i, board in enumerate(reversed(path)):
+        print(f"Step {i}:")
+        for row in board:
+            print(row)
+        if i < len(moves):
+            print(f"Move: {moves[len(moves)-1-i]}")
+        print()
+def create_random_start_board(N: int) -> List[List[int]]:
+    while True:
+        numbers = list(range(N * N))
+        random.shuffle(numbers)
+        board = [[0] * N for _ in range(N)]
+        for i in range(N):
+            for j in range(N):
+                board[i][j] = numbers[i * N + j]
+        if is_solvable(board, N):
+            return board
+
+if __name__ == "__main__":
+    N = 4
+    print(N)
+    start_board = create_random_start_board(N)
+    print(f"\nRandom initial state ({N}x{N}):")
+    for row in start_board:
+        print(row)
+    print()
+    print("end")
+    solution, steps = ida_star(start_board, N)
+    print_solution(solution)
