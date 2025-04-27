@@ -1,6 +1,10 @@
+# src/puzzle_state.py
 from typing import List, Tuple, Optional, Dict
+from .board_utils import create_goal_state
 
 class PuzzleState:
+    nodes_visited = 0  # Biến class để đếm tổng số node duyệt
+
     def __init__(self, board: List[List[int]], g: int = 0, parent: Optional['PuzzleState'] = None, move: str = None, N: int = 4, heuristic_type: str = 'manhattan', pdb: Optional[Dict] = None):
         self.board = board
         self.g = g
@@ -9,9 +13,8 @@ class PuzzleState:
         self.N = N
         self.heuristic_type = heuristic_type
         self.pdb = pdb
-        self.target_positions = {(i * N + j + 1): (i, j) for i in range(N) for j in range(N) if i * N + j + 1 < N * N}
-        self.target_positions[0] = (N-1, N-1)
-        self.nodes_visited = 0
+        self.target_positions = {(i * self.N + j + 1): (i, j) for i in range(self.N) for j in range(self.N) if i * self.N + j + 1 < self.N * self.N}
+        self.target_positions[0] = (self.N-1, self.N-1)
 
     def __eq__(self, other):
         return self.board == other.board
@@ -28,7 +31,7 @@ class PuzzleState:
 
     def misplaced_tiles(self) -> int:
         count = 0
-        goal = self.create_goal_state(self.N)
+        goal = create_goal_state(self.N)
         for i in range(self.N):
             for j in range(self.N):
                 if self.board[i][j] != goal[i][j] and self.board[i][j] != 0:
@@ -72,7 +75,7 @@ class PuzzleState:
         return self.pdb.get(board_tuple, 0)
 
     def h(self) -> int:
-        self.nodes_visited += 1
+        PuzzleState.nodes_visited += 1  # Tăng biến class
         if self.heuristic_type == 'manhattan':
             return self.manhattan_distance()
         elif self.heuristic_type == 'misplaced':
@@ -111,13 +114,3 @@ class PuzzleState:
                 new_board[row][col], new_board[new_row][new_col] = new_board[new_row][new_col], new_board[row][col]
                 neighbors.append(PuzzleState(new_board, self.g + 1, self, move_name, self.N, self.heuristic_type, self.pdb))
         return neighbors
-    def create_goal_state(N: int) -> List[List[int]]:
-        """Tạo trạng thái mục tiêu cho bảng NxN."""
-        goal = [[0] * N for _ in range(N)]
-        for i in range(N):
-            for j in range(N):
-                if i == N-1 and j == N-1:
-                    goal[i][j] = 0
-                else:
-                    goal[i][j] = i * N + j + 1
-        return goal
