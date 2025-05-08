@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                             QHBoxLayout, QPushButton, QLabel, QSpinBox, QComboBox,
-                            QFrame, QGroupBox, QProgressBar, QScrollArea, QSizePolicy, QBoxLayout, QGridLayout)
+                            QFrame, QGroupBox, QProgressBar, QScrollArea, QSizePolicy, QBoxLayout, QGridLayout, QFormLayout)
 from PyQt6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve, QPoint, QRect
 from PyQt6.QtGui import QPainter, QColor, QFont, QPixmap, QLinearGradient, QBrush, QFontDatabase, QPalette
 import sys
@@ -33,7 +33,7 @@ COLORS = {
     'highlight': '#FFF9C4',  # Light Yellow for highlights
 }
 
-FONT_FAMILY = 'Roboto'
+FONT_FAMILY = 'Arial, Helvetica, sans-serif'
 FONT_SIZE = {
     'small': 12,
     'medium': 16,
@@ -190,174 +190,91 @@ class MainWindow(QMainWindow):
         
         self.setStyleSheet(f"""
             QMainWindow {{
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, 
-                                            stop:0 {COLORS['background_start']}, 
-                                            stop:1 {COLORS['background_end']});
+                background: qlineargradient(
+                    x1:0, y1:0, x2:1, y2:1,
+                    stop:0 #f8ffae,
+                    stop:0.5 #a6c1ee,
+                    stop:1 #43c6ac
+                );
+            }}
+            QLabel, QGroupBox::title {{
+                font-family: {FONT_FAMILY};
+                color: #222;
+                font-size: 18px;
+                font-weight: 600;
             }}
             QPushButton {{
-                background-color: {COLORS['primary']};
-                color: white;
-                border: none;
-                padding: 12px 24px;
-                border-radius: 10px;
                 font-family: {FONT_FAMILY};
-                font-size: {FONT_SIZE['medium']}px;
-                font-weight: 600;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #a6c1ee, stop:1 #43c6ac);
+                color: #191654;  /* Changed to a darker color for better contrast */
+                border: none;
+                border-radius: 16px;
+                font-size: 20px;
+                font-weight: 700;
+                padding: 14px 0;
+                margin: 10px 0;
                 min-width: 120px;
-                transition: all 0.3s ease;
+                min-height: 44px;
+                transition: all 0.2s;
+                letter-spacing: 0.5px;
             }}
             QPushButton:hover {{
-                background-color: {COLORS['primary_dark']};
-                transform: scale(1.05);
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #43c6ac, stop:1 #a6c1ee);
+                color: #191654;  /* Ensure text remains visible on hover */
             }}
             QPushButton:pressed {{
-                background-color: {COLORS['primary_dark']};
-                transform: scale(0.95);
+                background: #a6c1ee;
+                color: #191654;  /* Ensure text remains visible when pressed */
             }}
             QPushButton:disabled {{
-                background-color: {COLORS['border']};
-                color: {COLORS['text_secondary']};
-            }}
-            QPushButton#actionButton {{
-                background-color: {COLORS['secondary']};
-            }}
-            QPushButton#actionButton:hover {{
-                background-color: {COLORS['secondary_dark']};
-            }}
-            QPushButton#actionButton:pressed {{
-                background-color: {COLORS['secondary_dark']};
-            }}
-            QLabel {{
-                font-family: {FONT_FAMILY};
-                font-size: {FONT_SIZE['medium']}px;
-                color: {COLORS['text']};
-            }}
-            QLabel#title {{
-                font-size: {FONT_SIZE['title']}px;
-                font-weight: bold;
-                color: {COLORS['text']};
-                margin-bottom: 15px;
-                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+                background: #d3d3d3;
+                color: #808080;  /* Gray text for disabled state */
             }}
             QSpinBox, QComboBox {{
-                padding: 8px 30px 8px 12px;
-                border: 2px solid {COLORS['border']};
-                border-radius: 10px;
-                background-color: {COLORS['surface']};
                 font-family: {FONT_FAMILY};
-                font-size: {FONT_SIZE['medium']}px;
-                min-width: 100px;
-                max-width: 120px;
-                height: 40px;
-            }}
-            QSpinBox:hover, QComboBox:hover {{
-                border-color: {COLORS['primary']};
-            }}
-            QSpinBox::up-button, QSpinBox::down-button {{
-                width: 18px;
-                height: 18px;
-                background-color: {COLORS['primary']};
-                border: none;
-                border-radius: 3px;
-                subcontrol-origin: padding;
-                subcontrol-position: top right;
-            }}
-            QSpinBox::up-button {{
-                subcontrol-position: top right;
-            }}
-            QSpinBox::down-button {{
-                subcontrol-position: bottom right;
-            }}
-            QSpinBox::up-button:hover, QSpinBox::down-button:hover {{
-                background-color: {COLORS['primary_dark']};
-            }}
-            QSpinBox::up-arrow, QSpinBox::down-arrow {{
-                width: 8px;
-                height: 8px;
-            }}
-            QSpinBox::up-arrow {{
-                image: none;
-                border-bottom: 5px solid white;
-                border-left: 5px solid transparent;
-                border-right: 5px solid transparent;
-            }}
-            QSpinBox::down-arrow {{
-                image: none;
-                border-top: 5px solid white;
-                border-left: 5px solid transparent;
-                border-right: 5px solid transparent;
-            }}
-            QComboBox::drop-down {{
-                width: 20px;
-                height: 40px;
-                border: none;
-                background: {COLORS['primary']};
-                border-radius: 0 10px 10px 0;
-                subcontrol-origin: padding;
-                subcontrol-position: right;
-            }}
-            QComboBox::drop-down:hover {{
-                background: {COLORS['primary_dark']};
-            }}
-            QComboBox::down-arrow {{
-                width: 8px;
-                height: 8px;
-                image: none;
-                border-top: 5px solid white;
-                border-left: 5px solid transparent;
-                border-right: 5px solid transparent;
-            }}
-            QComboBox QAbstractItemView {{
-                min-width: 150px;
-                background-color: {COLORS['surface']};
-                selection-background-color: {COLORS['primary']};
-                color: {COLORS['text']};
-            }}
-            QComboBox QAbstractItemView::item:selected {{
-                background-color: {COLORS['tile_normal']};
-                color: {COLORS['tile_text']};
-            }}
-            QGroupBox {{
-                border: 2px solid {COLORS['border']};
+                border: 2px solid #d1c4e9;
                 border-radius: 12px;
-                margin-top: 25px;
-                padding: 20px;
-                background-color: {COLORS['surface']};
-                font-family: {FONT_FAMILY};
-                font-size: {FONT_SIZE['large']}px;
-                font-weight: bold;
-                color: {COLORS['text']};
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                background: #fff;
+                font-size: 18px;
+                padding: 8px 16px;
+                min-width: 90px;
             }}
-            QGroupBox::title {{
-                subcontrol-origin: margin;
-                left: 20px;
-                padding: 6px 12px;
-                background-color: {COLORS['highlight']};
-                border-radius: 6px;
+            QSpinBox:focus, QComboBox:focus {{
+                border: 2px solid #a6c1ee;
             }}
             QProgressBar {{
-                border: 2px solid {COLORS['border']};
-                border-radius: 10px;
-                text-align: center;
-                background-color: {COLORS['surface']};
-                height: 25px;
-                font-family: {FONT_FAMILY};
-                font-size: {FONT_SIZE['small']}px;
-                color: {COLORS['text']};
+                border: none;
+                border-radius: 12px;
+                background: #e0eafc;
+                height: 28px;
+                font-size: 16px;
+                color: #333;
+                margin-top: 10px;
             }}
             QProgressBar::chunk {{
-                background-color: {COLORS['progress']};
-                border-radius: 8px;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #43c6ac, stop:1 #191654);
+                border-radius: 12px;
+                transition: width 0.3s;
+            }}
+            QLabel#title {{
+                font-size: 36px;
+                font-weight: 900;
+                color: #191654;
+                letter-spacing: 2px;
+                text-shadow: 2px 2px 8px #fff, 0 2px 8px #43c6ac44;
+                margin-bottom: 22px;
             }}
         """)
 
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
-        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll_area.setStyleSheet("background: transparent; border: none;")
         
         main_widget = QWidget()
+        main_widget.setMinimumWidth(900)
+        main_widget.setStyleSheet("background: transparent;")
         self.setCentralWidget(scroll_area)
         scroll_area.setWidget(main_widget)
         
@@ -370,60 +287,79 @@ class MainWindow(QMainWindow):
         header.setAlignment(Qt.AlignmentFlag.AlignCenter)
         main_layout.addWidget(header)
 
-        self.content_layout = QHBoxLayout()
+        self.content_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight)
         main_layout.addLayout(self.content_layout)
 
         left_panel = QWidget()
-        left_panel.setMinimumWidth(300)
-        left_panel.setMaximumWidth(340)
+        left_panel.setObjectName("leftPanel")
+        left_panel.setMinimumWidth(180)
+        left_panel.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        left_panel.setStyleSheet("""
+            background: #fff;
+            border-radius: 24px;
+            border: 2px solid #d1c4e9;
+            box-shadow: 0 4px 18px 0 rgba(100, 100, 180, 0.10);
+            padding: 14px 8px 14px 8px;
+        """)
         left_layout = QVBoxLayout(left_panel)
-        left_layout.setSpacing(20)
+        left_layout.setSpacing(14)
 
-        control_group = QGroupBox("🎮 Controls")
-        control_group_layout = QVBoxLayout(control_group)
-        control_group_layout.setSpacing(20)
-        control_group_layout.setContentsMargins(15, 30, 15, 15)
-        
-        size_layout = QGridLayout()
-        size_label = QLabel("Board Size:")
-        size_label.setFixedWidth(110)
-        size_layout.addWidget(size_label, 0, 0)
+        # Khởi tạo trước khi add vào form_layout
         self.size_spin = QSpinBox()
         self.size_spin.setRange(3, 8)
         self.size_spin.setValue(4)
         self.size_spin.valueChanged.connect(self.on_size_changed)
-        size_layout.addWidget(self.size_spin, 0, 1)
-        control_group_layout.addLayout(size_layout)
+        self.size_spin.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
-        heuristic_layout = QGridLayout()
-        heuristic_label = QLabel("Heuristic:")
-        heuristic_label.setFixedWidth(110)
-        heuristic_layout.addWidget(heuristic_label, 0, 0)
         self.heuristic_combo = QComboBox()
         self.heuristic_combo.addItems(['manhattan', 'misplaced', 'linear_conflict', 'pdb'])
-        heuristic_layout.addWidget(self.heuristic_combo, 0, 1)
-        control_group_layout.addLayout(heuristic_layout)
+        self.heuristic_combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
+        control_group = QGroupBox("🎮 Controls")
+        control_group_layout = QVBoxLayout(control_group)
+        control_group_layout.setSpacing(14)
+        control_group_layout.setContentsMargins(12, 18, 12, 12)
+
+        # Sử dụng QFormLayout cho phần chọn input
+        form_layout = QFormLayout()
+        form_layout.setSpacing(10)
+        form_layout.addRow(QLabel("Board Size:"), self.size_spin)
+        form_layout.addRow(QLabel("Heuristic:"), self.heuristic_combo)
+        control_group_layout.addLayout(form_layout)
+
+        # Chỉ thêm các nút thực sự cần thiết
         self.new_board_btn = QPushButton("🎲 New Board")
         self.new_board_btn.setObjectName("actionButton")
         self.new_board_btn.clicked.connect(self.create_new_board)
-        control_group_layout.addWidget(self.new_board_btn)
+        self.new_board_btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.new_board_btn.setMinimumWidth(130)
 
         self.solve_btn = QPushButton("🧠 Solve")
         self.solve_btn.setObjectName("actionButton")
         self.solve_btn.clicked.connect(self.solve_puzzle)
-        control_group_layout.addWidget(self.solve_btn)
+        self.solve_btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.solve_btn.setMinimumWidth(130)
+
+        btn_layout = QHBoxLayout()
+        btn_layout.setSpacing(10)
+        btn_layout.addWidget(self.new_board_btn)
+        btn_layout.addWidget(self.solve_btn)
+        control_group_layout.addLayout(btn_layout)
 
         nav_layout = QHBoxLayout()
         nav_layout.setSpacing(10)
         self.prev_step_btn = QPushButton("⬅ Previous")
         self.prev_step_btn.clicked.connect(self.prev_step)
         self.prev_step_btn.setEnabled(False)
+        self.prev_step_btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.prev_step_btn.setMinimumWidth(110)
         nav_layout.addWidget(self.prev_step_btn)
 
         self.next_step_btn = QPushButton("Next ➡")
         self.next_step_btn.clicked.connect(self.next_step)
         self.next_step_btn.setEnabled(False)
+        self.next_step_btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.next_step_btn.setMinimumWidth(110)
         nav_layout.addWidget(self.next_step_btn)
         control_group_layout.addLayout(nav_layout)
 
@@ -431,27 +367,20 @@ class MainWindow(QMainWindow):
 
         info_group = QGroupBox("📊 Information")
         info_layout = QVBoxLayout(info_group)
-        info_layout.setSpacing(12)
-        
+        info_layout.setSpacing(10)
         self.info_label = QLabel()
         self.info_label.setWordWrap(True)
         info_layout.addWidget(self.info_label)
 
-        steps_layout = QHBoxLayout()
-        steps_label = QLabel("Steps:")
-        steps_label.setFixedWidth(110)
-        steps_layout.addWidget(steps_label)
+        # Khởi tạo label trước khi add vào form_info
         self.steps_label = QLabel("0")
-        steps_layout.addWidget(self.steps_label)
-        info_layout.addLayout(steps_layout)
-
-        nodes_layout = QHBoxLayout()
-        nodes_label = QLabel("Nodes visited:")
-        nodes_label.setFixedWidth(110)
-        nodes_layout.addWidget(nodes_label)
         self.nodes_label = QLabel("0")
-        nodes_layout.addWidget(self.nodes_label)
-        info_layout.addLayout(nodes_layout)
+
+        form_info = QFormLayout()
+        form_info.setSpacing(8)
+        form_info.addRow(QLabel("Steps:"), self.steps_label)
+        form_info.addRow(QLabel("Nodes visited:"), self.nodes_label)
+        info_layout.addLayout(form_info)
 
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 100)
@@ -462,14 +391,16 @@ class MainWindow(QMainWindow):
         left_layout.addStretch()
 
         right_panel = QWidget()
-        right_panel.setMinimumSize(450, 650)
+        right_panel.setMinimumSize(500, 700)
+        right_panel.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
         right_layout = QVBoxLayout(right_panel)
-        right_layout.setSpacing(20)
+        right_layout.setSpacing(28)
         right_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
 
         current_label = QLabel("🎯 Current State")
         current_label.setObjectName("title")
         current_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        current_label.setStyleSheet(f"font-size: 26px; font-family: {FONT_FAMILY}; font-weight: 800; color: #191654;")
         right_layout.addWidget(current_label)
         
         self.puzzle_board = PuzzleBoard()
@@ -478,6 +409,7 @@ class MainWindow(QMainWindow):
         goal_label = QLabel("🏁 Goal State")
         goal_label.setObjectName("title")
         goal_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        goal_label.setStyleSheet(f"font-size: 26px; font-family: {FONT_FAMILY}; font-weight: 800; color: #191654;")
         right_layout.addWidget(goal_label)
         
         self.goal_board = PuzzleBoard(is_goal=True)
@@ -497,15 +429,38 @@ class MainWindow(QMainWindow):
         if self.puzzle_board and self.goal_board:
             self.puzzle_board.update_tiles()
             self.goal_board.update_tiles()
-            
-        if self.width() < 1000:
-            if isinstance(self.content_layout, QHBoxLayout):
-                self.content_layout.setDirection(QBoxLayout.Direction.TopToBottom)
+        if self.width() < 900:
+            self.content_layout.setDirection(QBoxLayout.Direction.TopToBottom)
+            self.set_groupbox_padding(8)
         else:
-            if isinstance(self.content_layout, QHBoxLayout):
-                self.content_layout.setDirection(QBoxLayout.Direction.LeftToRight)
-                
+            self.content_layout.setDirection(QBoxLayout.Direction.LeftToRight)
+            self.set_groupbox_padding(20)
         super().resizeEvent(event)
+
+    def set_groupbox_padding(self, padding):
+        style = f"""
+            QGroupBox {{
+                background: #fafaff;
+                border: 2px solid #d1c4e9;
+                border-radius: 22px;
+                margin-top: 22px;
+                padding: {padding}px;
+                box-shadow: 0 4px 18px 0 rgba(100, 100, 180, 0.10);
+            }}
+            QGroupBox::title {{
+                subcontrol-origin: margin;
+                left: 18px;
+                padding: 10px 22px;
+                background: #fffbe7;
+                color: #222;
+                border-radius: 10px;
+                font-size: 20px;
+                font-weight: 700;
+                letter-spacing: 1px;
+            }}
+        """
+        for gb in self.findChildren(QGroupBox):
+            gb.setStyleSheet(style)
 
     def on_size_changed(self, value):
         self.create_new_board()
@@ -691,6 +646,7 @@ class MainWindow(QMainWindow):
 
 def run_gui():
     app = QApplication(sys.argv)
+    app.setFont(QFont("Arial", 12))
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
