@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                             QHBoxLayout, QPushButton, QLabel, QSpinBox, QComboBox,
                             QFrame, QGroupBox, QProgressBar, QScrollArea, QSizePolicy, QBoxLayout, QGridLayout, QFormLayout,
-                            QFileDialog)
+                            QFileDialog, QMessageBox)
 from PyQt6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve, QPoint, QRect
 from PyQt6.QtGui import QPainter, QColor, QFont, QPixmap, QLinearGradient, QBrush, QFontDatabase, QPalette, QImage
 import sys
@@ -367,11 +367,19 @@ class MainWindow(QMainWindow):
         self.load_image_btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.load_image_btn.setMinimumWidth(130)
 
+        # Thêm nút so sánh heuristic
+        self.compare_btn = QPushButton("📊 So sánh heuristic")
+        self.compare_btn.setObjectName("actionButton")
+        self.compare_btn.clicked.connect(self.compare_heuristics)
+        self.compare_btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.compare_btn.setMinimumWidth(130)
+
         btn_layout = QHBoxLayout()
         btn_layout.setSpacing(10)
         btn_layout.addWidget(self.new_board_btn)
         btn_layout.addWidget(self.solve_btn)
         btn_layout.addWidget(self.load_image_btn)
+        btn_layout.addWidget(self.compare_btn)
         control_group_layout.addLayout(btn_layout)
 
         nav_layout = QHBoxLayout()
@@ -713,6 +721,62 @@ class MainWindow(QMainWindow):
                 
             except Exception as e:
                 self.info_label.setText(f"Error loading image: {str(e)} 😅")
+
+    def compare_heuristics(self):
+        heuristics = ['manhattan', 'misplaced', 'linear_conflict', 'out_of_row_col']
+        results = []
+        N = self.size_spin.value()
+        board = self.current_board
+        import time
+        for h in heuristics:
+            start = time.time()
+            PuzzleState.nodes_visited = 0
+            solution, steps = ida_star(board, N, h)
+            elapsed = int((time.time() - start) * 1000)  # ms
+            if solution:
+                # Đếm số bước đi
+                path = []
+                current = solution
+                while current:
+                    path.append(current)
+                    current = current.parent
+                path.reverse()
+                num_steps = len(path) - 1
+                results.append({
+                    'heuristic': h,
+                    'nodes': PuzzleState.nodes_visited,
+                    'steps': num_steps,
+                    'time': elapsed,
+                    'solved': True
+                })
+            else:
+                results.append({
+                    'heuristic': h,
+                    'nodes': PuzzleState.nodes_visited,
+                    'steps': '-',
+                    'time': elapsed,
+                    'solved': False
+                })
+        # Tạo nội dung hiển thị
+        msg = "So sánh các heuristic:\n\n"
+        for r in results:
+            msg += f"Heuristic: {r['heuristic']}\n"
+            if r['solved']:
+                msg += f"  Số node đã duyệt: {r['nodes']}\n"
+                msg += f"  Số bước đi: {r['steps']}\n"
+                msg += f"  Thời gian: {r['time']} ms\n"
+            else:
+                msg += "  Không tìm được lời giải (quá tốn thời gian)\n"
+            msg += "\n"
+        # Kết luận heuristic tốt nhất (ít node nhất và giải được)
+        solved_results = [r for r in results if r['solved']]
+        if solved_results:
+            best = min(solved_results, key=lambda x: x['nodes'])
+            msg += f"Kết luận: Heuristic tốt nhất là {best['heuristic']} (node duyệt ít nhất).\n"
+        else:
+            msg += "Không heuristic nào giải được bài toán này.\n"
+        # Hiển thị popup
+        QMessageBox.information(self, "So sánh heuristic", msg)
 
 def run_gui():
     app = QApplication(sys.argv)
