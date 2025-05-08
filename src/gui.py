@@ -1,8 +1,9 @@
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                             QHBoxLayout, QPushButton, QLabel, QSpinBox, QComboBox,
-                            QFrame, QGroupBox, QProgressBar, QScrollArea, QSizePolicy, QBoxLayout, QGridLayout, QFormLayout)
+                            QFrame, QGroupBox, QProgressBar, QScrollArea, QSizePolicy, QBoxLayout, QGridLayout, QFormLayout,
+                            QFileDialog)
 from PyQt6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve, QPoint, QRect
-from PyQt6.QtGui import QPainter, QColor, QFont, QPixmap, QLinearGradient, QBrush, QFontDatabase, QPalette
+from PyQt6.QtGui import QPainter, QColor, QFont, QPixmap, QLinearGradient, QBrush, QFontDatabase, QPalette, QImage
 import sys
 import os
 from .board_utils import create_random_start_board, create_goal_state
@@ -10,6 +11,8 @@ from .pattern_database import load_or_create_pdb
 from .solver import ida_star
 from .utils import print_solution
 from .puzzle_state import PuzzleState
+from PIL import Image
+import numpy as np
 
 # Color palette and font settings
 COLORS = {
@@ -42,11 +45,12 @@ FONT_SIZE = {
 }
 
 class PuzzleTile(QWidget):
-    def __init__(self, value, size, parent=None, is_goal=False):
+    def __init__(self, value, size, parent=None, is_goal=False, image=None):
         super().__init__(parent)
         self.value = value
         self.size = size
         self.is_goal = is_goal
+        self.image = image
         self.setFixedSize(size, size)
         self.original_pos = self.pos()
         self.animation = None
@@ -60,32 +64,37 @@ class PuzzleTile(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        gradient = QLinearGradient(0, 0, 0, self.height())
-        if self.value == 0:
-            gradient.setColorAt(0, QColor(COLORS['empty_tile']))
-            gradient.setColorAt(1, QColor(COLORS['empty_tile']).darker(120))
+        if self.image is not None and self.value != 0:
+            # Draw image tile
+            painter.drawPixmap(0, 0, self.width(), self.height(), self.image)
         else:
-            if self.is_goal:
-                gradient.setColorAt(0, QColor(COLORS['goal_tile']))
-                gradient.setColorAt(1, QColor(COLORS['goal_tile']).darker(110))
+            # Draw colored tile for empty space or when no image
+            gradient = QLinearGradient(0, 0, 0, self.height())
+            if self.value == 0:
+                gradient.setColorAt(0, QColor(COLORS['empty_tile']))
+                gradient.setColorAt(1, QColor(COLORS['empty_tile']).darker(120))
             else:
-                gradient.setColorAt(0, QColor(COLORS['tile_normal']))
-                gradient.setColorAt(1, QColor(COLORS['tile_accent']))
-        
-        painter.setBrush(QBrush(QColor(COLORS['tile_shadow']).lighter(120)))
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.drawRoundedRect(4, 4, self.width()-4, self.height()-4, 15, 15)
+                if self.is_goal:
+                    gradient.setColorAt(0, QColor(COLORS['goal_tile']))
+                    gradient.setColorAt(1, QColor(COLORS['goal_tile']).darker(110))
+                else:
+                    gradient.setColorAt(0, QColor(COLORS['tile_normal']))
+                    gradient.setColorAt(1, QColor(COLORS['tile_accent']))
+            
+            painter.setBrush(QBrush(QColor(COLORS['tile_shadow']).lighter(120)))
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.drawRoundedRect(4, 4, self.width()-4, self.height()-4, 15, 15)
 
-        painter.setBrush(QBrush(gradient))
-        painter.setPen(QColor(COLORS['border']))
-        painter.drawRoundedRect(0, 0, self.width(), self.height(), 15, 15)
+            painter.setBrush(QBrush(gradient))
+            painter.setPen(QColor(COLORS['border']))
+            painter.drawRoundedRect(0, 0, self.width(), self.height(), 15, 15)
 
-        if self.value != 0:
-            painter.setPen(QColor(COLORS['tile_text']))
-            font_size = max(16, min(32, self.size // 3))
-            font = QFont(FONT_FAMILY, font_size, QFont.Weight.Bold)
-            painter.setFont(font)
-            painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, str(self.value))
+            if self.value != 0:
+                painter.setPen(QColor(COLORS['tile_text']))
+                font_size = max(16, min(32, self.size // 3))
+                font = QFont(FONT_FAMILY, font_size, QFont.Weight.Bold)
+                painter.setFont(font)
+                painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, str(self.value))
 
     def animate_move(self, new_pos):
         if self.animation:
@@ -106,6 +115,7 @@ class PuzzleBoard(QWidget):
         self.board = None
         self.solution = None
         self.current_step = 0
+        self.image_tiles = {}
         self.setMinimumSize(320, 320)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setStyleSheet(f"""
@@ -124,10 +134,11 @@ class PuzzleBoard(QWidget):
         cell_size = max(min_cell_size, cell_size)
         return cell_size
 
-    def set_board(self, board, N=None):
+    def set_board(self, board, N=None, image_tiles=None):
         if N is not None and N != self.N:
             self.N = N
         self.board = board
+        self.image_tiles = image_tiles or {}
         self.current_step = 0
         for tile in self.tiles.values():
             tile.setParent(None)
@@ -142,7 +153,7 @@ class PuzzleBoard(QWidget):
         self.tiles.clear()
         if self.board is None:
             return
-       
+
         cell_size = self.calculate_cell_size(self.size())
         total_size = cell_size * self.N
         x_offset = (self.width() - total_size) // 2
@@ -150,9 +161,10 @@ class PuzzleBoard(QWidget):
         for i in range(self.N):
             for j in range(self.N):
                 value = self.board[i][j]
-                tile = PuzzleTile(value, cell_size - 8, self, self.is_goal)
-                tile.move(x_offset + j * cell_size + 4, y_offset + i * cell_size + 4)
-                tile.setFixedSize(cell_size - 8, cell_size - 8)
+                image = self.image_tiles.get(value) if value != 0 else None
+                tile = PuzzleTile(value, cell_size, self, self.is_goal, image)
+                tile.move(x_offset + j * cell_size, y_offset + i * cell_size)
+                tile.setFixedSize(cell_size, cell_size)
                 self.tiles[(i, j)] = tile
                 tile.show()
 
@@ -340,10 +352,18 @@ class MainWindow(QMainWindow):
         self.solve_btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.solve_btn.setMinimumWidth(130)
 
+        # Add image selection button
+        self.load_image_btn = QPushButton("🖼️ Load Image")
+        self.load_image_btn.setObjectName("actionButton")
+        self.load_image_btn.clicked.connect(self.load_image)
+        self.load_image_btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.load_image_btn.setMinimumWidth(130)
+
         btn_layout = QHBoxLayout()
         btn_layout.setSpacing(10)
         btn_layout.addWidget(self.new_board_btn)
         btn_layout.addWidget(self.solve_btn)
+        btn_layout.addWidget(self.load_image_btn)
         control_group_layout.addLayout(btn_layout)
 
         nav_layout = QHBoxLayout()
@@ -422,6 +442,8 @@ class MainWindow(QMainWindow):
         self.current_board = None
         self.solution_path = None
         self.pdb = None
+        self.current_image = None
+        self.image_tiles = {}
 
         self.create_new_board()
 
@@ -468,10 +490,10 @@ class MainWindow(QMainWindow):
     def create_new_board(self):
         N = self.size_spin.value()
         self.current_board = create_random_start_board(N)
-        self.puzzle_board.set_board(self.current_board, N)
+        self.puzzle_board.set_board(self.current_board, N, self.image_tiles)
         
         goal_board = create_goal_state(N)
-        self.goal_board.set_board(goal_board, N)
+        self.goal_board.set_board(goal_board, N, self.image_tiles)
         
         self.info_label.setText("New board created! Let's solve it!")
         self.solution_path = None
@@ -643,6 +665,53 @@ class MainWindow(QMainWindow):
         self.prev_step_btn.setEnabled(True)
         if self.puzzle_board.current_step >= len(self.solution_path) - 1:
             self.next_step_btn.setEnabled(False)
+
+    def load_image(self):
+        file_name, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select Image",
+            "",
+            "Image Files (*.png *.jpg *.jpeg *.bmp *.gif)"
+        )
+        
+        if file_name:
+            try:
+                # Load and process image
+                image = Image.open(file_name)
+                N = self.size_spin.value()
+                
+                # Resize image to be square
+                size = min(image.size)
+                image = image.crop((0, 0, size, size))
+                image = image.resize((N * 100, N * 100))  # Resize to a reasonable size
+                
+                # Convert to QPixmap
+                image = image.convert('RGB')
+                data = image.tobytes('raw', 'RGB')
+                qimage = QImage(data, image.size[0], image.size[1], QImage.Format.Format_RGB888)
+                self.current_image = QPixmap.fromImage(qimage)
+                
+                # Create tiles from image
+                self.image_tiles.clear()
+                tile_size = self.current_image.width() // N
+                for i in range(N):
+                    for j in range(N):
+                        if i == N-1 and j == N-1:  # Empty tile
+                            continue
+                        tile = self.current_image.copy(
+                            j * tile_size,
+                            i * tile_size,
+                            tile_size,
+                            tile_size
+                        )
+                        self.image_tiles[i * N + j + 1] = tile
+                
+                # Update boards
+                self.create_new_board()
+                self.info_label.setText("Image loaded! Let's solve it! 🎨")
+                
+            except Exception as e:
+                self.info_label.setText(f"Error loading image: {str(e)} 😅")
 
 def run_gui():
     app = QApplication(sys.argv)
