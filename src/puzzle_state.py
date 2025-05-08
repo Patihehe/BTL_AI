@@ -1,18 +1,16 @@
-# src/puzzle_state.py
 from typing import List, Tuple, Optional, Dict
 from .board_utils import create_goal_state
 
 class PuzzleState:
     nodes_visited = 0  # Biến class để đếm tổng số node duyệt
 
-    def __init__(self, board: List[List[int]], g: int = 0, parent: Optional['PuzzleState'] = None, move: str = None, N: int = 4, heuristic_type: str = 'manhattan', pdb: Optional[Dict] = None):
+    def __init__(self, board: List[List[int]], g: int = 0, parent: Optional['PuzzleState'] = None, move: str = None, N: int = 4, heuristic_type: str = 'manhattan'):
         self.board = board
         self.g = g
         self.parent = parent
         self.move = move
         self.N = N
         self.heuristic_type = heuristic_type
-        self.pdb = pdb
         self.target_positions = {(i * self.N + j + 1): (i, j) for i in range(self.N) for j in range(self.N) if i * self.N + j + 1 < self.N * self.N}
         self.target_positions[0] = (self.N-1, self.N-1)
 
@@ -66,24 +64,27 @@ class PuzzleState:
         
         return distance + conflicts
 
-    def pattern_database(self) -> int:
-        if self.pdb is None:
-            return 0
-        tiles = list(self.pdb.keys())[0]
-        tiles_set = set(i for i in tiles if i != -1 and i != 0)
-        board_tuple = tuple(self.board[i // self.N][i % self.N] if self.board[i // self.N][i % self.N] in tiles_set or self.board[i // self.N][i % self.N] == 0 else -1 for i in range(self.N * self.N))
-        return self.pdb.get(board_tuple, 0)
+    def out_of_row_col(self) -> int:
+        count = 0
+        for i in range(self.N):
+            for j in range(self.N):
+                value = self.board[i][j]
+                if value != 0:
+                    target_row, target_col = self.target_positions[value]
+                    if i != target_row or j != target_col:
+                        count += 1
+        return count
 
     def h(self) -> int:
-        PuzzleState.nodes_visited += 1  # Tăng biến class
+        PuzzleState.nodes_visited += 1
         if self.heuristic_type == 'manhattan':
             return self.manhattan_distance()
         elif self.heuristic_type == 'misplaced':
             return self.misplaced_tiles()
         elif self.heuristic_type == 'linear_conflict':
             return self.linear_conflict()
-        elif self.heuristic_type == 'pdb':
-            return self.pattern_database()
+        elif self.heuristic_type == 'out_of_row_col':
+            return self.out_of_row_col()
         else:
             raise ValueError(f"Unknown heuristic type: {self.heuristic_type}")
 
@@ -112,5 +113,5 @@ class PuzzleState:
             if 0 <= new_row < self.N and 0 <= new_col < self.N:
                 new_board = [row[:] for row in self.board]
                 new_board[row][col], new_board[new_row][new_col] = new_board[new_row][new_col], new_board[row][col]
-                neighbors.append(PuzzleState(new_board, self.g + 1, self, move_name, self.N, self.heuristic_type, self.pdb))
+                neighbors.append(PuzzleState(new_board, self.g + 1, self, move_name, self.N, self.heuristic_type))
         return neighbors

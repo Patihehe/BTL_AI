@@ -1,12 +1,12 @@
-# src/solver.py
 from typing import List, Tuple, Optional
 from .puzzle_state import PuzzleState
 from .board_utils import create_goal_state
 
-def ida_star(start_board: List[List[int]], N: int, heuristic_type: str = 'manhattan', pdb: Optional[dict] = None) -> Tuple[Optional[PuzzleState], int]:
+def ida_star(start_board: List[List[int]], N: int, heuristic_type: str = 'manhattan') -> Tuple[Optional[PuzzleState], int]:
     """Giải bài toán n-puzzle bằng thuật toán IDA*."""
-    PuzzleState.nodes_visited = 0  # Đặt lại nodes_visited trước khi chạy
-    start_state = PuzzleState(start_board, N=N, heuristic_type=heuristic_type, pdb=pdb)
+
+    PuzzleState.nodes_visited = 0
+    start_state = PuzzleState(start_board, N=N, heuristic_type=heuristic_type)
     threshold = start_state.f()
     while True:
         result, new_threshold = search(start_state, threshold)
