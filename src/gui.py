@@ -67,6 +67,15 @@ class PuzzleTile(QWidget):
         if self.image is not None and self.value != 0:
             # Draw image tile
             painter.drawPixmap(0, 0, self.width(), self.height(), self.image)
+            if not self.is_goal:
+                # Draw number (very small, at bottom-right corner)
+                painter.setPen(QColor(COLORS['tile_text']))
+                font_size = max(10, min(16, self.size // 7))
+                font = QFont(FONT_FAMILY, font_size, QFont.Weight.Bold)
+                painter.setFont(font)
+                padding = 6
+                rect = QRect(self.width() - self.width() // 3 - padding, self.height() - self.height() // 5 - padding, self.width() // 3, self.height() // 5)
+                painter.drawText(rect, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom, str(self.value))
         else:
             # Draw colored tile for empty space or when no image
             gradient = QLinearGradient(0, 0, 0, self.height())
@@ -90,6 +99,7 @@ class PuzzleTile(QWidget):
             painter.drawRoundedRect(0, 0, self.width(), self.height(), 15, 15)
 
             if self.value != 0:
+                # Draw number big and centered (for normal matrix)
                 painter.setPen(QColor(COLORS['tile_text']))
                 font_size = max(16, min(32, self.size // 3))
                 font = QFont(FONT_FAMILY, font_size, QFont.Weight.Bold)
