@@ -335,7 +335,7 @@ class MainWindow(QMainWindow):
         self.heuristic_combo.addItems(['manhattan', 'misplaced', 'linear_conflict', 'out_of_row_col'])
         self.heuristic_combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
-        control_group = QGroupBox("🎮 Controls")
+        control_group = QGroupBox("Controls")
         control_group_layout = QVBoxLayout(control_group)
         control_group_layout.setSpacing(14)
         control_group_layout.setContentsMargins(12, 18, 12, 12)
