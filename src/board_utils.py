@@ -13,7 +13,7 @@ def create_goal_state(N: int) -> List[List[int]]:
                 goal[i][j] = i * N + j + 1
     return goal
 
-def create_random_start_board(N: int, max_steps: int = 50) -> List[List[int]]:
+def create_random_start_board(N: int, max_steps: int = 30) -> List[List[int]]:
     """Tạo trạng thái ban đầu bằng cách xáo trộn trạng thái mục tiêu."""
     board = create_goal_state(N)
     directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
