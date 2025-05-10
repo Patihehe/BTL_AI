@@ -66,14 +66,28 @@ class PuzzleTile(QWidget):
             # Draw image tile
             painter.drawPixmap(0, 0, self.width(), self.height(), self.image)
             if not self.is_goal:
-                # Draw number (very small, at bottom-right corner)
-                painter.setPen(QColor(COLORS['tile_text']))
-                font_size = max(10, min(16, self.size // 7))
+                # Draw number at bottom-right corner, smaller and with outline
+                font_size = max(12, self.size // 7)
                 font = QFont(FONT_FAMILY, font_size, QFont.Weight.Bold)
                 painter.setFont(font)
-                padding = 6
-                rect = QRect(self.width() - self.width() // 3 - padding, self.height() - self.height() // 5 - padding, self.width() // 3, self.height() // 5)
-                painter.drawText(rect, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom, str(self.value))
+                padding = max(6, self.size // 18)
+                number = str(self.value)
+                # Calculate text size
+                metrics = painter.fontMetrics()
+                text_width = metrics.horizontalAdvance(number)
+                text_height = metrics.height()
+                x = self.width() - text_width - padding
+                y = self.height() - padding
+                # Draw outline (white)
+                outline_color = QColor("white")
+                for dx in [-1, 0, 1]:
+                    for dy in [-1, 0, 1]:
+                        if dx != 0 or dy != 0:
+                            painter.setPen(outline_color)
+                            painter.drawText(x + dx, y + dy, number)
+                # Draw main number (deep blue)
+                painter.setPen(QColor(COLORS['tile_text']))
+                painter.drawText(x, y, number)
         else:
             # Draw colored tile for empty space or when no image
             gradient = QLinearGradient(0, 0, 0, self.height())
@@ -124,7 +138,7 @@ class PuzzleBoard(QWidget):
         self.solution = None
         self.current_step = 0
         self.image_tiles = {}
-        self.setMinimumSize(320, 320)
+        self.setMinimumSize(300, 300)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setStyleSheet(f"""
             QWidget {{
@@ -132,7 +146,6 @@ class PuzzleBoard(QWidget):
                 border: 3px solid {COLORS['border']};
                 border-radius: 20px;
                 padding: 12px;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             }}
         """)
 
@@ -235,7 +248,6 @@ class MainWindow(QMainWindow):
                 margin: 10px 0;
                 min-width: 120px;
                 min-height: 44px;
-                transition: all 0.2s;
                 letter-spacing: 0.5px;
             }}
             QPushButton:hover {{
@@ -274,14 +286,12 @@ class MainWindow(QMainWindow):
             QProgressBar::chunk {{
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #43c6ac, stop:1 #191654);
                 border-radius: 12px;
-                transition: width 0.3s;
             }}
             QLabel#title {{
                 font-size: 36px;
                 font-weight: 900;
                 color: #191654;
                 letter-spacing: 2px;
-                text-shadow: 2px 2px 8px #fff, 0 2px 8px #43c6ac44;
                 margin-bottom: 22px;
             }}
         """)
@@ -293,7 +303,7 @@ class MainWindow(QMainWindow):
         scroll_area.setStyleSheet("background: transparent; border: none;")
         
         main_widget = QWidget()
-        main_widget.setMinimumWidth(900)
+        main_widget.setMinimumWidth(0)
         main_widget.setStyleSheet("background: transparent;")
         self.setCentralWidget(scroll_area)
         scroll_area.setWidget(main_widget)
@@ -312,13 +322,12 @@ class MainWindow(QMainWindow):
 
         left_panel = QWidget()
         left_panel.setObjectName("leftPanel")
-        left_panel.setMinimumWidth(180)
+        left_panel.setMinimumWidth(0)
         left_panel.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         left_panel.setStyleSheet("""
             background: #fff;
             border-radius: 24px;
             border: 2px solid #d1c4e9;
-            box-shadow: 0 4px 18px 0 rgba(100, 100, 180, 0.10);
             padding: 14px 8px 14px 8px;
         """)
         left_layout = QVBoxLayout(left_panel)
@@ -335,7 +344,7 @@ class MainWindow(QMainWindow):
         self.heuristic_combo.addItems(['manhattan', 'misplaced', 'linear_conflict', 'out_of_row_col'])
         self.heuristic_combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
-        control_group = QGroupBox("🎮 Controls")
+        control_group = QGroupBox("Controls")
         control_group_layout = QVBoxLayout(control_group)
         control_group_layout.setSpacing(14)
         control_group_layout.setContentsMargins(12, 18, 12, 12)
@@ -348,31 +357,31 @@ class MainWindow(QMainWindow):
         control_group_layout.addLayout(form_layout)
 
         # Chỉ thêm các nút thực sự cần thiết
-        self.new_board_btn = QPushButton("🎲 New Board")
+        self.new_board_btn = QPushButton("New Board")
         self.new_board_btn.setObjectName("actionButton")
         self.new_board_btn.clicked.connect(self.create_new_board)
         self.new_board_btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.new_board_btn.setMinimumWidth(130)
+        self.new_board_btn.setMinimumWidth(0)
 
-        self.solve_btn = QPushButton("🧠 Solve")
+        self.solve_btn = QPushButton("Solve")
         self.solve_btn.setObjectName("actionButton")
         self.solve_btn.clicked.connect(self.solve_puzzle)
         self.solve_btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.solve_btn.setMinimumWidth(130)
+        self.solve_btn.setMinimumWidth(0)
 
         # Add image selection button
-        self.load_image_btn = QPushButton("🖼️ Load Image")
+        self.load_image_btn = QPushButton("Load Image")
         self.load_image_btn.setObjectName("actionButton")
         self.load_image_btn.clicked.connect(self.load_image)
         self.load_image_btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.load_image_btn.setMinimumWidth(130)
+        self.load_image_btn.setMinimumWidth(0)
 
         # Thêm nút so sánh heuristic
-        self.compare_btn = QPushButton("📊 So sánh heuristic")
+        self.compare_btn = QPushButton("So sánh heuristic")
         self.compare_btn.setObjectName("actionButton")
         self.compare_btn.clicked.connect(self.compare_heuristics)
         self.compare_btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.compare_btn.setMinimumWidth(130)
+        self.compare_btn.setMinimumWidth(0)
 
         btn_layout = QHBoxLayout()
         btn_layout.setSpacing(10)
@@ -388,20 +397,20 @@ class MainWindow(QMainWindow):
         self.prev_step_btn.clicked.connect(self.prev_step)
         self.prev_step_btn.setEnabled(False)
         self.prev_step_btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.prev_step_btn.setMinimumWidth(110)
+        self.prev_step_btn.setMinimumWidth(0)
         nav_layout.addWidget(self.prev_step_btn)
 
         self.next_step_btn = QPushButton("Next ➡")
         self.next_step_btn.clicked.connect(self.next_step)
         self.next_step_btn.setEnabled(False)
         self.next_step_btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.next_step_btn.setMinimumWidth(110)
+        self.next_step_btn.setMinimumWidth(0)
         nav_layout.addWidget(self.next_step_btn)
         control_group_layout.addLayout(nav_layout)
 
         left_layout.addWidget(control_group)
 
-        info_group = QGroupBox("📊 Information")
+        info_group = QGroupBox("Information")
         info_layout = QVBoxLayout(info_group)
         info_layout.setSpacing(10)
         self.info_label = QLabel()
@@ -433,7 +442,7 @@ class MainWindow(QMainWindow):
         right_layout.setSpacing(28)
         right_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
 
-        current_label = QLabel("🎯 Current State")
+        current_label = QLabel("Current State")
         current_label.setObjectName("title")
         current_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         current_label.setStyleSheet(f"font-size: 26px; font-family: {FONT_FAMILY}; font-weight: 800; color: #191654;")
@@ -442,7 +451,7 @@ class MainWindow(QMainWindow):
         self.puzzle_board = PuzzleBoard()
         right_layout.addWidget(self.puzzle_board, alignment=Qt.AlignmentFlag.AlignHCenter)
 
-        goal_label = QLabel("🏁 Goal State")
+        goal_label = QLabel("Goal State")
         goal_label.setObjectName("title")
         goal_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         goal_label.setStyleSheet(f"font-size: 26px; font-family: {FONT_FAMILY}; font-weight: 800; color: #191654;")
@@ -453,7 +462,7 @@ class MainWindow(QMainWindow):
         right_layout.addStretch()
 
         self.content_layout.addWidget(left_panel)
-        self.content_layout.addWidget(right_panel, stretch=2)
+        self.content_layout.addWidget(right_panel, stretch=3)
 
         self.current_board = None
         self.solution_path = None
@@ -482,7 +491,6 @@ class MainWindow(QMainWindow):
                 border-radius: 22px;
                 margin-top: 22px;
                 padding: {padding}px;
-                box-shadow: 0 4px 18px 0 rgba(100, 100, 180, 0.10);
             }}
             QGroupBox::title {{
                 subcontrol-origin: margin;
@@ -521,29 +529,6 @@ class MainWindow(QMainWindow):
         QTimer.singleShot(0, self.puzzle_board.update_tiles)
         QTimer.singleShot(0, self.goal_board.update_tiles)
 
-    def is_solvable(self, board, N):
-        """Check if the puzzle is solvable by counting inversions."""
-        flat_board = [num for row in board for num in row if num != 0]
-        inversions = 0
-        for i in range(len(flat_board)):
-            for j in range(i + 1, len(flat_board)):
-                if flat_board[i] > flat_board[j]:
-                    inversions += 1
-        
-        blank_row_from_bottom = None
-        for i in range(N):
-            for j in range(N):
-                if board[i][j] == 0:
-                    blank_row_from_bottom = N - i
-                    break
-            if blank_row_from_bottom is not None:
-                break
-
-        if N % 2 == 1:
-            return inversions % 2 == 0
-        else:
-            return (inversions + blank_row_from_bottom - 1) % 2 == 0
-
     def solve_puzzle(self):
         if self.current_board is None:
             self.info_label.setText("No board to solve!")
@@ -562,14 +547,6 @@ class MainWindow(QMainWindow):
 
         N = self.size_spin.value()
         heuristic = self.heuristic_combo.currentText()
-
-        # Check if the puzzle is solvable
-        if not self.is_solvable(self.current_board, N):
-            self.info_label.setText("This puzzle is not solvable! Try a new board. 😅")
-            self.next_step_btn.setEnabled(False)
-            self.prev_step_btn.setEnabled(False)
-            self.progress_bar.setValue(0)
-            return
 
         self.progress_bar.setValue(50)
         QApplication.processEvents()
@@ -601,7 +578,7 @@ class MainWindow(QMainWindow):
             self.prev_step_btn.setEnabled(False)
             self.progress_bar.setValue(0)  # Start at 0%, update as user steps through
         else:
-            self.info_label.setText("No solution found. Try again! 😅")
+            self.info_label.setText("No solution found. Try again!")
             self.next_step_btn.setEnabled(False)
             self.prev_step_btn.setEnabled(False)
             self.progress_bar.setValue(0)
@@ -717,10 +694,10 @@ class MainWindow(QMainWindow):
                 
                 # Update boards
                 self.create_new_board()
-                self.info_label.setText("Image loaded! Let's solve it! 🎨")
+                self.info_label.setText("Image loaded! Let's solve it!")
                 
             except Exception as e:
-                self.info_label.setText(f"Error loading image: {str(e)} 😅")
+                self.info_label.setText(f"Error loading image: {str(e)}")
 
     def compare_heuristics(self):
         heuristics = ['manhattan', 'misplaced', 'linear_conflict', 'out_of_row_col']
