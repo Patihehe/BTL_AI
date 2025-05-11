@@ -16,10 +16,7 @@ def create_goal_state(N: int) -> List[List[int]]:
 def create_random_start_board(N: int) -> List[List[int]]:
     """Tạo trạng thái ban đầu bằng cách xáo trộn trạng thái mục tiêu,
     tránh đi lại ngược hướng liên tiếp."""
-    if N > 5:
-        max_steps = random.randint(10, 20) + 1
-    else:
-        max_steps = random.randint(15, 23) + 1
+    max_steps = random.randint(15, 20)
     board = create_goal_state(N)
     directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]  # UP, DOWN, LEFT, RIGHT
     opposite = {(-1, 0): (1, 0), (1, 0): (-1, 0), (0, -1): (0, 1), (0, 1): (0, -1)}
