@@ -7,7 +7,6 @@ from PyQt6.QtGui import QPainter, QColor, QFont, QPixmap, QLinearGradient, QBrus
 import sys
 from src.board_utils import create_random_start_board, create_goal_state
 from src.solver import ida_star
-from src.utils import print_solution
 from src.puzzle_state import PuzzleState
 from PIL import Image
 import numpy as np

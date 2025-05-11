@@ -4,14 +4,16 @@ from .board_utils import create_goal_state
 class PuzzleState:
     nodes_visited = 0  # Biến class để đếm tổng số node duyệt
 
-    def __init__(self, board: List[List[int]], g: int = 0, parent: Optional['PuzzleState'] = None, move: str = None, N: int = 4, heuristic_type: str = 'manhattan'):
-        self.board = board
-        self.g = g
-        self.parent = parent
-        self.move = move
-        self.N = N
-        self.heuristic_type = heuristic_type
-        self.target_positions = {(i * self.N + j + 1): (i, j) for i in range(self.N) for j in range(self.N) if i * self.N + j + 1 < self.N * self.N}
+    def __init__(self, board: List[List[int]], g: int = 0, parent: Optional['PuzzleState'] = None,
+                  move: str = None, N: int = 4, heuristic_type: str = 'manhattan'):
+        self.board = board # Bảng trạng thái hiện tại
+        self.g = g # Chi phí từ trạng thái khởi đầu đến trạng thái hiện tại
+        self.parent = parent # Lưu trạng thái cha để truy vết đường đi
+        self.move = move # Lưu hướng di chuyển từ trạng thái cha đến trạng thái hiện tại
+        self.N = N # Kích thước của bảng (NxN)
+        self.heuristic_type = heuristic_type # Loại hàm heuristic được sử dụng
+        self.target_positions = {(i * self.N + j + 1): (i, j) for i in range(self.N)
+                                  for j in range(self.N) if i * self.N + j + 1 < self.N * self.N}
         self.target_positions[0] = (self.N-1, self.N-1)
 
     def __eq__(self, other):
@@ -107,7 +109,6 @@ class PuzzleState:
             (0, -1, "Left"),
             (0, 1, "Right")
         ]
-
         for dr, dc, move_name in directions:
             new_row, new_col = row + dr, col + dc
             if 0 <= new_row < self.N and 0 <= new_col < self.N:
