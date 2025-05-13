@@ -340,7 +340,7 @@ class MainWindow(QMainWindow):
         self.size_spin.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         self.heuristic_combo = QComboBox()
-        self.heuristic_combo.addItems(['manhattan', 'misplaced', 'linear_conflict', 'out_of_row_col'])
+        self.heuristic_combo.addItems(['manhattan', 'misplaced', 'linear_conflict', 'euclidean'])
         self.heuristic_combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         control_group = QGroupBox("Controls")
@@ -699,7 +699,7 @@ class MainWindow(QMainWindow):
                 self.info_label.setText(f"Error loading image: {str(e)}")
 
     def compare_heuristics(self):
-        heuristics = ['manhattan', 'misplaced', 'linear_conflict', 'out_of_row_col']
+        heuristics = ['manhattan', 'misplaced', 'linear_conflict', 'euclidean']
         results = []
         N = self.size_spin.value()
         board = self.current_board

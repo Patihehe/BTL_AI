@@ -1,3 +1,4 @@
+import math
 from typing import List, Tuple, Optional, Dict
 from .board_utils import create_goal_state
 
@@ -65,17 +66,19 @@ class PuzzleState:
                             conflicts += 2
         
         return distance + conflicts
-
-    def out_of_row_col(self) -> int:
-        count = 0
+    
+    def euclidean_distance(self) -> int:
+        total = 0
         for i in range(self.N):
             for j in range(self.N):
                 value = self.board[i][j]
-                if value != 0:
-                    target_row, target_col = self.target_positions[value]
-                    if i != target_row or j != target_col:
-                        count += 1
-        return count
+                if value == 0:
+                    continue
+                target_i, target_j = self.target_positions[value]
+                # Tính khoảng cách Euclid và lấy phần nguyên
+                distance = math.sqrt((i - target_i) ** 2 + (j - target_j) ** 2)
+                total += int(round(distance))
+        return total
 
     def h(self) -> int:
         PuzzleState.nodes_visited += 1
@@ -85,8 +88,8 @@ class PuzzleState:
             return self.misplaced_tiles()
         elif self.heuristic_type == 'linear_conflict':
             return self.linear_conflict()
-        elif self.heuristic_type == 'out_of_row_col':
-            return self.out_of_row_col()
+        elif self.heuristic_type == 'euclidean':
+            return self.euclidean_distance()
         else:
             raise ValueError(f"Unknown heuristic type: {self.heuristic_type}")
 
